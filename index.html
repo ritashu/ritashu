@@ -1,0 +1,2717 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 
+        ============================================================
+        【移动端适配设置】
+        - width=device-width: 宽度等于设备宽度
+        - initial-scale=1.0: 初始缩放比例为1
+        - maximum-scale=1.0: 最大缩放比例为1
+        - user-scalable=no: 禁止用户手动缩放
+        ============================================================
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 
+        【iOS Safari 全屏模式设置】
+        - apple-mobile-web-app-capable: 允许全屏运行
+        - apple-mobile-web-app-status-bar-style: 状态栏样式
+    -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- 【Android Chrome 主题色】 -->
+    <meta name="theme-color" content="#ffffff">
+    <title>薯片机 - AI 聊天 App</title>
+    
+    <style>
+        /* 
+            ================================================================
+            【全局样式重置】
+            - 清除所有默认边距和内边距
+            - 使用 border-box 盒模型，方便计算尺寸
+            - 设置默认字体为苹方/微软雅黑
+            ================================================================
+        */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+            /* 禁止文字选中，提升App体验 */
+            -webkit-user-select: none;
+            user-select: none;
+            /* 禁止长按弹出菜单 */
+            -webkit-touch-callout: none;
+            /* 【修复】移除点击时的蓝色高亮 */
+            -webkit-tap-highlight-color: transparent;
+            tap-highlight-color: transparent;
+        }
+        
+        /* 
+            【页面主体样式】
+            - 纯白背景色
+            - 黑色字体
+            - 隐藏横向滚动条
+        */
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            color: #000000;
+            overflow: hidden;
+            /* 【修复】防止iOS橡皮筋效果 */
+            overscroll-behavior: none;
+        }
+        
+        /* 
+            ================================================================
+            【全屏容器】
+            - 占满整个视口
+            - 使用 Flex 布局，垂直排列
+            - 作为所有内容的根容器
+            ================================================================
+        */
+        #app-container {
+            width: 100vw;
+            height: 100vh;
+            /* 使用 dvh 单位解决移动端地址栏问题 */
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 
+            ================================================================
+            【顶部导航栏】
+            - 固定在页面顶部
+            - 高度50px
+            - 包含用户信息和添加按钮
+            ================================================================
+        */
+        .top-nav {
+            height: 50px;
+            min-height: 50px;
+            width: 100%;
+            background-color: #ffffff;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            position: relative;
+            z-index: 100;
+        }
+        
+        /* 
+            【用户信息区域】
+            - 左侧显示头像和用户名
+            - 点击后打开侧边栏
+            【修复】使用 will-change 优化动画性能，解决卡顿
+        */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: background-color 0.15s ease;
+            /* 【修复】优化点击性能 */
+            will-change: background-color;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        .user-info:active {
+            background-color: #f5f5f5;
+        }
+        
+        /* 
+            【用户头像】
+            - 圆形头像
+            - 【修复】使用固定宽高和flex居中，防止变形
+        */
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            min-width: 35px;
+            min-height: 35px;
+            max-width: 35px;
+            max-height: 35px;
+            border-radius: 50%;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+            /* 【修复】防止头像变形 */
+            flex-shrink: 0;
+            overflow: hidden;
+            /* 如果是图片头像 */
+            object-fit: cover;
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        /* 【用户名称】 */
+        .user-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #000;
+        }
+        
+        /* 
+            【添加按钮】
+            - 右上角的加号按钮
+            - 使用SVG图标
+        */
+        .add-btn {
+            width: 35px;
+            height: 35px;
+            min-width: 35px;
+            border-radius: 50%;
+            background-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            will-change: background-color;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        .add-btn:active {
+            background-color: #f0f0f0;
+        }
+        .add-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: #333;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* 
+            ================================================================
+            【搜索栏】- 三个页面共用
+            ================================================================
+        */
+        .search-bar {
+            padding: 10px 15px;
+            background-color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            height: 36px;
+            background-color: #f5f5f5;
+            border: none;
+            border-radius: 18px;
+            padding: 0 12px;
+        }
+        .search-input-wrapper svg {
+            width: 18px;
+            height: 18px;
+            stroke: #999;
+            stroke-width: 2;
+            fill: none;
+            flex-shrink: 0;
+        }
+        .search-input {
+            flex: 1;
+            height: 100%;
+            background-color: transparent;
+            border: none;
+            font-size: 14px;
+            color: #333;
+            outline: none;
+        }
+        .search-input::placeholder {
+            color: #999;
+        }
+
+        /* 
+            ================================================================
+            【侧边功能栏】
+            - 从左侧滑出的菜单
+            - 【修复】使用 transform 代替 left，提升性能
+            ================================================================
+        */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 80%;
+            max-width: 320px;
+            height: 100vh;
+            height: 100dvh;
+            background-color: #ffffff;
+            z-index: 300;
+            /* 【修复】使用transform优化动画性能 */
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            will-change: transform;
+        }
+        .side-menu.open {
+            transform: translateX(0);
+        }
+        
+        /* 
+            【用户名片区域】
+        */
+        .card-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px 25px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        /* 【名片头像】- 修复变形 */
+        .card-avatar {
+            width: 70px;
+            height: 70px;
+            min-width: 70px;
+            min-height: 70px;
+            max-width: 70px;
+            max-height: 70px;
+            border-radius: 50%;
+            background-color: #e8e8e8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #666;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .card-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 【名片用户名】 */
+        .card-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 5px;
+        }
+        
+        /* 【个性签名】 */
+        .card-signature {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+            text-align: center;
+            max-width: 90%;
+        }
+        
+        /* 【编辑名片按钮】 */
+        .card-edit {
+            font-size: 12px;
+            color: #666;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        .card-edit:active {
+            color: #333;
+        }
+        
+        /* 
+            【功能菜单列表】
+        */
+        .menu-list {
+            flex: 1;
+            padding: 10px 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* 【菜单项样式】 */
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .menu-item:active {
+            background-color: #f5f5f5;
+        }
+        
+        /* 【菜单图标】- 使用SVG线条图标 */
+        .menu-icon {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .menu-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: #333;
+            stroke-width: 1.8;
+            fill: none;
+        }
+        
+        /* 【菜单文字】 */
+        .menu-text {
+            font-size: 15px;
+            color: #333;
+        }
+        
+        /* 【菜单分隔线】 */
+        .menu-divider {
+            height: 1px;
+            background-color: #f0f0f0;
+            margin: 10px 20px;
+        }
+
+        /* 
+            ================================================================
+            【遮罩层】
+            ================================================================
+        */
+        .mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 250;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .mask.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 
+            ================================================================
+            【主内容区域】
+            ================================================================
+        */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            -webkit-overflow-scrolling: touch;
+            flex-direction: column;
+        }
+        .main-content.active {
+            display: flex;
+        }
+        
+        /* 
+            ================================================================
+            【消息页面】- 默认为空
+            ================================================================
+        */
+        .msg-page {
+            padding: 0;
+        }
+        
+        /* 【消息列表容器】 */
+        .msg-list {
+            padding: 0;
+            flex: 1;
+        }
+        
+        /* 【单条消息项】 */
+        .msg-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .msg-item:active {
+            background-color: #f5f5f5;
+        }
+        .msg-item.pinned {
+            background-color: #fafafa;
+        }
+        
+        /* 【消息头像】- 修复变形 */
+        .msg-avatar {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            max-width: 48px;
+            max-height: 48px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #666;
+            position: relative;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .msg-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 【未读消息红点】 */
+        .msg-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            min-width: 18px;
+            height: 18px;
+            background-color: #ff4d4f;
+            border-radius: 9px;
+            font-size: 11px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+        
+        /* 【消息内容区域】 */
+        .msg-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* 【消息标题行】 */
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        /* 【联系人名称】 */
+        .msg-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* 【消息时间】 */
+        .msg-time {
+            font-size: 11px;
+            color: #999;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+        
+        /* 【最后一条消息预览】 */
+        .msg-desc {
+            font-size: 13px;
+            color: #999;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 【空状态】 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            color: #999;
+        }
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .empty-icon svg {
+            width: 60px;
+            height: 60px;
+            stroke: #ddd;
+            stroke-width: 1.5;
+            fill: none;
+        }
+        .empty-text {
+            font-size: 14px;
+            color: #999;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* 
+            ================================================================
+            【好友页面】- 默认只有分组，无好友
+            ================================================================
+        */
+        .friend-page {
+            padding: 0;
+        }
+        
+        /* 【好友分组】 */
+        .friend-group {
+            margin-bottom: 0;
+        }
+        
+        /* 【分组标题栏】 */
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .group-header:active {
+            background-color: #f0f0f0;
+        }
+        
+        /* 【分组标题左侧】 */
+        .group-title-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 【展开/收起箭头】 */
+        .group-arrow {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+        .group-arrow svg {
+            width: 12px;
+            height: 12px;
+            stroke: #666;
+            stroke-width: 2;
+            fill: none;
+        }
+        .group-header.collapsed .group-arrow {
+            transform: rotate(-90deg);
+        }
+        
+        /* 【分组名称】 */
+        .group-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        /* 【分组人数】 */
+        .group-count {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* 【分组编辑按钮】 */
+        .group-edit {
+            font-size: 12px;
+            color: #666;
+            padding: 5px 10px;
+        }
+        
+        /* 【好友列表】 */
+        .friend-list {
+            display: none;
+            flex-direction: column;
+        }
+        .friend-list.show {
+            display: flex;
+        }
+        
+        /* 【单个好友项】 */
+        .friend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 15px 10px 35px;
+            background-color: #fff;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .friend-item:active {
+            background-color: #f5f5f5;
+        }
+        
+        /* 【好友头像】- 修复变形 */
+        .friend-avatar {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            min-height: 42px;
+            max-width: 42px;
+            max-height: 42px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #666;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .friend-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 【好友信息】 */
+        .friend-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* 【好友名称】 */
+        .friend-name {
+            font-size: 15px;
+            color: #000;
+            margin-bottom: 2px;
+        }
+        
+        /* 【好友签名/状态】 */
+        .friend-status {
+            font-size: 12px;
+            color: #999;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 【空分组提示】 */
+        .group-empty {
+            padding: 20px 35px;
+            font-size: 13px;
+            color: #ccc;
+            text-align: center;
+        }
+
+        /* 
+            ================================================================
+            【动态页面】
+            ================================================================
+        */
+        .dynamic-page {
+            padding: 0;
+        }
+        
+        /* 【功能列表】 */
+        .func-list {
+            padding: 10px 0;
+            flex: 1;
+        }
+        
+        /* 【功能项】 */
+        .func-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .func-item:active {
+            background-color: #f5f5f5;
+        }
+        
+        /* 【功能项左侧】 */
+        .func-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* 【功能图标】- 使用SVG线条图标 */
+        .func-icon {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 8px;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .func-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: #333;
+            stroke-width: 1.8;
+            fill: none;
+        }
+        
+        /* 【功能名称和描述】 */
+        .func-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .func-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #000;
+        }
+        .func-desc {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* 【功能项右侧箭头】 */
+        .func-arrow {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .func-arrow svg {
+            width: 12px;
+            height: 12px;
+            stroke: #ccc;
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        /* 【功能分隔区域】 */
+        .func-divider {
+            height: 10px;
+            background-color: #f5f5f5;
+        }
+
+        /* 
+            ================================================================
+            【功能子页面容器】
+            ================================================================
+        */
+        .sub-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            background-color: #fff;
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+        }
+        .sub-page.open {
+            transform: translateX(0);
+        }
+        
+        /* 【子页面顶部导航】 */
+        .sub-nav {
+            height: 50px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        /* 【返回按钮】 */
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 0;
+            cursor: pointer;
+            font-size: 15px;
+            color: #333;
+            transition: opacity 0.15s ease;
+        }
+        .back-btn:active {
+            opacity: 0.6;
+        }
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: #333;
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        /* 【子页面标题】 */
+        .sub-title {
+            flex: 1;
+            text-align: center;
+            font-size: 17px;
+            font-weight: 500;
+            color: #000;
+            margin-right: 50px;
+        }
+        
+        /* 【子页面内容区域】 */
+        .sub-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* 【占位提示文字】 */
+        .placeholder-text {
+            text-align: center;
+            color: #999;
+            padding: 50px 20px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        /* 
+            ================================================================
+            【底部标签栏】
+            ================================================================
+        */
+        .tab-bar {
+            height: 55px;
+            min-height: 55px;
+            width: 100%;
+            background-color: #ffffff;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* 【标签项】 */
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            cursor: pointer;
+            padding: 5px 20px;
+            opacity: 0.4;
+            transition: opacity 0.15s ease;
+            position: relative;
+        }
+        .tab-item.active {
+            opacity: 1;
+        }
+        
+        /* 【标签图标】- 使用SVG线条图标 */
+        .tab-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tab-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: #333;
+            stroke-width: 1.8;
+            fill: none;
+        }
+        
+        /* 【标签文字】 */
+        .tab-text {
+            font-size: 11px;
+            color: #333;
+        }
+
+        /* 
+            ================================================================
+            【添加弹窗】
+            ================================================================
+        */
+        .add-popup {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            z-index: 150;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.9);
+            transform-origin: top right;
+            transition: all 0.2s ease;
+        }
+        .add-popup.show {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+        
+        /* 【弹窗选项】 */
+        .popup-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.15s ease;
+        }
+        .popup-item:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+        .popup-item:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+        .popup-item:active {
+            background-color: #f5f5f5;
+        }
+        
+        /* 【弹窗图标】 */
+        .popup-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .popup-icon svg {
+            width: 20px;
+            height: 20px;
+好的，继续输出剩余代码：
+
+```html
+            stroke: #333;
+            stroke-width: 1.8;
+            fill: none;
+        }
+        
+        /* 【弹窗文字】 */
+        .popup-text {
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* 
+            ================================================================
+            【聊天页面】
+            ================================================================
+        */
+        .chat-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            background-color: #f5f5f5;
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+        }
+        .chat-page.open {
+            transform: translateX(0);
+        }
+        
+        /* 【聊天顶部导航】 */
+        .chat-nav {
+            height: 50px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        /* 【聊天对象名称】 */
+        .chat-title {
+            font-size: 17px;
+            font-weight: 500;
+            color: #000;
+        }
+        
+        /* 【聊天更多按钮】 */
+        .chat-more {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .chat-more svg {
+            width: 20px;
+            height: 20px;
+            stroke: #333;
+            stroke-width: 1.8;
+            fill: none;
+        }
+        
+        /* 【聊天消息区域】 */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* 【消息气泡】 */
+        .chat-bubble {
+            display: flex;
+            gap: 10px;
+            max-width: 80%;
+        }
+        .chat-bubble.received {
+            align-self: flex-start;
+        }
+        .chat-bubble.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        
+        /* 【聊天头像】- 修复变形 */
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+            max-width: 36px;
+            max-height: 36px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #666;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .chat-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 【消息内容】 */
+        .chat-text {
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .chat-bubble.received .chat-text {
+            background-color: #fff;
+            color: #333;
+            border-top-left-radius: 4px;
+        }
+        .chat-bubble.sent .chat-text {
+            background-color: #000;
+            color: #fff;
+            border-top-right-radius: 4px;
+        }
+        
+        /* 【聊天输入区域】 */
+        .chat-input-area {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            padding: 10px 15px;
+            background-color: #fff;
+            border-top: 1px solid #f0f0f0;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+        
+        /* 【输入框】 */
+        .chat-input {
+            flex: 1;
+            min-height: 36px;
+            max-height: 100px;
+            padding: 8px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 18px;
+            font-size: 15px;
+            resize: none;
+            outline: none;
+            line-height: 1.4;
+        }
+        .chat-input:focus {
+            border-color: #333;
+        }
+        
+        /* 【发送按钮】 */
+        .chat-send-btn {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            background-color: #000;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease;
+        }
+        .chat-send-btn:active {
+            transform: scale(0.95);
+        }
+        .chat-send-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: #fff;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* 
+            ================================================================
+            【个性名片编辑页面】
+            ================================================================
+        */
+        .card-edit-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            background-color: #f5f5f5;
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+        }
+        .card-edit-page.open {
+            transform: translateX(0);
+        }
+        
+        /* 【编辑项】 */
+        .edit-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .edit-item:active {
+            background-color: #f5f5f5;
+        }
+        
+        /* 【编辑项标签】 */
+        .edit-label {
+            font-size: 15px;
+            color: #333;
+        }
+        
+        /* 【编辑项内容】 */
+        .edit-value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        /* 【编辑项箭头】 */
+        .edit-arrow {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .edit-arrow svg {
+            width: 12px;
+            height: 12px;
+            stroke: #ccc;
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        /* 【编辑头像预览】- 修复变形 */
+        .edit-avatar {
+            width: 50px;
+            height: 50px;
+            min-width: 50px;
+            min-height: 50px;
+            max-width: 50px;
+            max-height: 50px;
+            border-radius: 50%;
+            background-color: #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .edit-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 
+            ================================================================
+            【加载动画】
+            ================================================================
+        */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #f0f0f0;
+            border-top-color: #333;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 
+            ================================================================
+            【工具类】
+            ================================================================
+        */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        
+        <!-- 【顶部导航栏】 -->
+        <div class="top-nav" id="top-nav">
+            <div class="user-info" id="user-info">
+                <div class="user-avatar">薯</div>
+                <div class="user-name">薯片机用户</div>
+            </div>
+            <div class="add-btn" id="add-btn">
+                <!-- 加号图标 -->
+                <svg viewBox="0 0 24 24">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </div>
+        </div>
+
+        <!-- 【添加弹窗】 -->
+        <div class="add-popup" id="add-popup">
+            <div class="popup-item" id="add-friend-btn">
+                <div class="popup-icon">
+                    <!-- 添加好友图标 -->
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="8" r="4"></circle>
+                        <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="17" y1="11" x2="23" y2="11"></line>
+                    </svg>
+                </div>
+                <div class="popup-text">添加AI好友</div>
+            </div>
+            <div class="popup-item" id="create-group-btn">
+                <div class="popup-icon">
+                    <!-- 创建群聊图标 -->
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="9" cy="7" r="3"></circle>
+                        <circle cx="15" cy="7" r="3"></circle>
+                        <path d="M3 21v-2a4 4 0 0 1 4-4h2"></path>
+                        <path d="M15 15a4 4 0 0 1 4 4v2"></path>
+                        <circle cx="12" cy="14" r="3"></circle>
+                        <path d="M8 21a4 4 0 0 1 8 0"></path>
+                    </svg>
+                </div>
+                <div class="popup-text">创建AI群聊</div>
+            </div>
+            <div class="popup-item" id="scan-btn">
+                <div class="popup-icon">
+                    <!-- 扫一扫图标 -->
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                    </svg>
+                </div>
+                <div class="popup-text">扫一扫</div>
+            </div>
+        </div>
+
+        <!-- 【侧边功能栏】 -->
+        <div class="side-menu" id="side-menu">
+            <div class="card-info">
+                <div class="card-avatar">薯</div>
+                <div class="card-name" id="display-name">薯片机用户</div>
+                <div class="card-signature">这个人很懒，什么都没写~</div>
+                <div class="card-edit" id="card-edit-btn">编辑个性名片</div>
+            </div>
+            
+            <div class="menu-list">
+                <!-- 钱包 -->
+                <div class="menu-item" data-func="wallet">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="M2 10h20"></path>
+                            <circle cx="17" cy="14" r="2"></circle>
+                        </svg>
+                    </div>
+                    <div class="menu-text">钱包</div>
+                </div>
+                
+                <!-- 收藏 -->
+                <div class="menu-item" data-func="collection">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                    </div>
+                    <div class="menu-text">收藏</div>
+                </div>
+                
+                <!-- 表情包 -->
+                <div class="menu-item" data-func="emoji">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                    </div>
+                    <div class="menu-text">表情包</div>
+                </div>
+                
+                <!-- 世界书 -->
+                <div class="menu-item" data-func="worldbook">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                    </div>
+                    <div class="menu-text">世界书</div>
+                </div>
+                
+                <div class="menu-divider"></div>
+                
+                <!-- 个性装扮 -->
+                <div class="menu-item" data-func="decoration">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                    </div>
+                    <div class="menu-text">个性装扮</div>
+                </div>
+                
+                <!-- API设置 -->
+                <div class="menu-item" data-func="api-settings">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <div class="menu-text">API设置</div>
+                </div>
+                
+                <!-- 聊天总结 -->
+                <div class="menu-item" data-func="chat-summary">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="menu-text">聊天总结</div>
+                </div>
+                
+                <div class="menu-divider"></div>
+                
+                <!-- 设置 -->
+                <div class="menu-item" data-func="settings">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </div>
+                    <div class="menu-text">设置</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 【遮罩层】 -->
+        <div class="mask" id="mask"></div>
+
+        <!-- 【消息页面】 -->
+        <div class="main-content msg-page active" id="msg-page">
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="搜索" id="search-input-msg">
+                </div>
+            </div>
+            
+            <div class="msg-list" id="msg-list">
+                <!-- 默认空状态 -->
+                <div class="empty-state" id="msg-empty">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="empty-text">暂无消息<br>点击右上角 + 添加AI好友开始聊天</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 【好友页面】 -->
+        <div class="main-content friend-page" id="friend-page">
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="搜索好友" id="search-input-friend">
+                </div>
+            </div>
+            
+            <!-- 好友分组 -->
+            <div class="friend-group">
+                <div class="group-header" data-group="common">
+                    <div class="group-title-left">
+                        <div class="group-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="group-title">常用AI</div>
+                        <div class="group-count">(0/0)</div>
+                    </div>
+                    <div class="group-edit">管理</div>
+                </div>
+                <div class="friend-list show" data-group="common">
+                    <div class="group-empty">暂无好友，点击右上角添加</div>
+                </div>
+            </div>
+            
+            <div class="friend-group">
+                <div class="group-header collapsed" data-group="roleplay">
+                    <div class="group-title-left">
+                        <div class="group-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="group-title">角色扮演</div>
+                        <div class="group-count">(0/0)</div>
+                    </div>
+                    <div class="group-edit">管理</div>
+                </div>
+                <div class="friend-list" data-group="roleplay">
+                    <div class="group-empty">暂无好友</div>
+                </div>
+            </div>
+            
+            <div class="friend-group">
+                <div class="group-header collapsed" data-group="tools">
+                    <div class="group-title-left">
+                        <div class="group-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="group-title">工具助手</div>
+                        <div class="group-count">(0/0)</div>
+                    </div>
+                    <div class="group-edit">管理</div>
+                </div>
+                <div class="friend-list" data-group="tools">
+                    <div class="group-empty">暂无好友</div>
+                </div>
+            </div>
+            
+            <!-- 群聊管理 -->
+            <div class="friend-group">
+                <div class="group-header collapsed" data-group="groups">
+                    <div class="group-title-left">
+                        <div class="group-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="group-title">群聊管理</div>
+                        <div class="group-count">(0/0)</div>
+                    </div>
+                    <div class="group-edit">管理</div>
+                </div>
+                <div class="friend-list" data-group="groups">
+                    <div class="group-empty">暂无群聊</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 【动态页面】 -->
+        <div class="main-content dynamic-page" id="dynamic-page">
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="搜索" id="search-input-dynamic">
+                </div>
+            </div>
+            
+            <div class="func-list">
+                <!-- 朋友圈 -->
+                <div class="func-item" data-page="moments-page">
+                    <div class="func-left">
+                        <div class="func-icon">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                        </div>
+                        <div class="func-info">
+                            <div class="func-name">朋友圈</div>
+                            <div class="func-desc">查看AI好友的动态</div>
+                        </div>
+                    </div>
+                    <div class="func-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="func-divider"></div>
+                
+                <!-- 论坛 -->
+                <div class="func-item" data-page="forum-page">
+                    <div class="func-left">
+                        <div class="func-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                            </svg>
+                        </div>
+                        <div class="func-info">
+                            <div class="func-name">论坛</div>
+                            <div class="func-desc">与其他用户交流讨论</div>
+                        </div>
+                    </div>
+                    <div class="func-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- 小红书 -->
+                <div class="func-item" data-page="xiaohongshu-page">
+                    <div class="func-left">
+                        <div class="func-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="func 好的，继续输出剩余代码：
+
+```html
+-name">小红书</div>
+                            <div class="func-desc">发现有趣的AI玩法</div>
+                        </div>
+                    </div>
+                    <div class="func-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- 日历 -->
+                <div class="func-item" data-page="calendar-page">
+                    <div class="func-left">
+                        <div class="func-icon">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <div class="func-info">
+                            <div class="func-name">日历</div>
+                            <div class="func-desc">管理日程与提醒</div>
+                        </div>
+                    </div>
+                    <div class="func-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- 一起听 -->
+                <div class="func-item" data-page="listen-page">
+                    <div class="func-left">
+                        <div class="func-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M9 18V5l12-2v13"></path>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <circle cx="18" cy="16" r="3"></circle>
+                            </svg>
+                        </div>
+                        <div class="func-info">
+                            <div class="func-name">一起听</div>
+                            <div class="func-desc">与AI一起听音乐</div>
+                        </div>
+                    </div>
+                    <div class="func-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="func-divider"></div>
+                
+                <!-- 角色卡库 -->
+                <div class="func-item" data-page="character-page">
+                    <div class="func-left">
+                        <div class="func-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="func-info">
+                            <div class="func-name">角色卡库</div>
+                            <div class="func-desc">浏览和导入角色卡</div>
+                        </div>
+                    </div>
+                    <div class="func-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- SillyTavern简约版 -->
+                <div class="func-item" data-page="sillytavern-page">
+                    <div class="func-left">
+                        <div class="func-icon">
+                            <svg viewBox="0 0 24 24">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                <polyline points="2 17 12 22 22 17"></polyline>
+                                <polyline points="2 12 12 17 22 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="func-info">
+                            <div class="func-name">SillyTavern简约版</div>
+                            <div class="func-desc">高级角色扮演功能</div>
+                        </div>
+                    </div>
+                    <div class="func-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 【底部标签栏】 -->
+        <div class="tab-bar" id="tab-bar">
+            <div class="tab-item active" data-tab="msg-page">
+                <div class="tab-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <div class="tab-text">消息</div>
+            </div>
+            <div class="tab-item" data-tab="friend-page">
+                <div class="tab-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <div class="tab-text">好友</div>
+            </div>
+            <div class="tab-item" data-tab="dynamic-page">
+                <div class="tab-icon">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                    </svg>
+                </div>
+                <div class="tab-text">动态</div>
+            </div>
+        </div>
+
+        <!-- ============ 子页面区域 ============ -->
+        
+        <!-- 朋友圈页面 -->
+        <div class="sub-page" id="moments-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="moments-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">朋友圈</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【朋友圈功能开发中】<br><br>
+                    计划功能：<br>
+                    1. AI好友自动发布动态<br>
+                    2. 点赞、评论互动<br>
+                    3. 发布自己的动态
+                </div>
+            </div>
+        </div>
+
+        <!-- 论坛页面 -->
+        <div class="sub-page" id="forum-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="forum-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">论坛</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【论坛功能开发中】<br><br>
+                    计划功能：<br>
+                    1. 分享角色卡和预设<br>
+                    2. 交流使用心得<br>
+                    3. 求助与解答
+                </div>
+            </div>
+        </div>
+
+        <!-- 小红书页面 -->
+        <div class="sub-page" id="xiaohongshu-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="xiaohongshu-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">小红书</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【小红书功能开发中】<br><br>
+                    计划功能：<br>
+                    1. 图文笔记分享<br>
+                    2. AI玩法教程<br>
+                    3. 角色卡推荐
+                </div>
+            </div>
+        </div>
+
+        <!-- 日历页面 -->
+        <div class="sub-page" id="calendar-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="calendar-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">日历</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【日历功能开发中】<br><br>
+                    计划功能：<br>
+                    1. 日程管理<br>
+                    2. AI提醒助手<br>
+                    3. 重要事件记录<br>
+                    4. 与AI好友的约定
+                </div>
+            </div>
+        </div>
+
+        <!-- 一起听页面 -->
+        <div class="sub-page" id="listen-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="listen-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">一起听</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【一起听功能开发中】<br><br>
+                    计划功能：<br>
+                    1. 与AI一起听音乐<br>
+                    2. AI音乐推荐<br>
+                    3. 歌单分享<br>
+                    4. 音乐聊天室
+                </div>
+            </div>
+        </div>
+
+        <!-- 角色卡库页面 -->
+        <div class="sub-page" id="character-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="character-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">角色卡库</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【角色卡库功能开发中】<br><br>
+                    计划功能：<br>
+                    1. 热门角色卡推荐<br>
+                    2. 分类浏览<br>
+                    3. 搜索角色<br>
+                    4. 一键导入
+                </div>
+            </div>
+        </div>
+
+        <!-- SillyTavern简约版页面 -->
+        <div class="sub-page" id="sillytavern-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="sillytavern-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">SillyTavern简约版</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【SillyTavern简约版开发中】<br><br>
+                    计划功能：<br>
+                    1. 角色卡导入（PNG/JSON）<br>
+                    2. 世界书/知识库<br>
+                    3. 预设管理（Prompt模板）<br>
+                    4. 高级对话参数设置<br>
+                    5. 多角色群聊<br>
+                    6. 对话历史导出
+                </div>
+            </div>
+        </div>
+
+        <!-- API设置页面 -->
+        <div class="sub-page" id="api-settings-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="api-settings-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">API设置</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【API设置功能开发中】<br><br>
+                    计划功能：<br>
+                    1. API密钥配置<br>
+                    2. 模型选择（GPT-4、Claude等）<br>
+                    3. API代理设置<br>
+                    4. 对话参数（温度、最大Token等）<br>
+                    5. 多API轮询/负载均衡
+                </div>
+            </div>
+        </div>
+
+        <!-- 聊天总结页面 -->
+        <div class="sub-page" id="chat-summary-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="chat-summary-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">聊天总结</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【聊天总结功能开发中】<br><br>
+                    计划功能：<br>
+                    1. 自动总结对话内容<br>
+                    2. 关键信息提取<br>
+                    3. 对话记忆管理<br>
+                    4. 导出总结报告
+                </div>
+            </div>
+        </div>
+
+        <!-- 世界书页面 -->
+        <div class="sub-page" id="worldbook-page">
+            <div class="sub-nav">
+                <div class="back-btn" data-back="worldbook-page">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">世界书</div>
+            </div>
+            <div class="sub-content">
+                <div class="placeholder-text">
+                    【世界书功能开发中】<br><br>
+                    计划功能：<br>
+                    1. 创建世界观设定<br>
+                    2. 角色关系管理<br>
+                    3. 场景/地点设定<br>
+                    4. 关键词触发机制<br>
+                    5. 导入/导出世界书
+                </div>
+            </div>
+        </div>
+
+        <!-- 【聊天页面】 -->
+        <div class="chat-page" id="chat-page">
+            <div class="chat-nav">
+                <div class="back-btn" id="chat-back-btn">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="chat-title" id="chat-title">AI助手</div>
+                <div class="chat-more">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="19" cy="12" r="1"></circle>
+                        <circle cx="5" cy="12" r="1"></circle>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <!-- 消息会通过JavaScript动态添加 -->
+            </div>
+            
+            <div class="chat-input-area">
+                <textarea class="chat-input" id="chat-input" placeholder="输入消息..." rows="1"></textarea>
+                <button class="chat-send-btn" id="chat-send-btn">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 【个性名片编辑页面】 -->
+        <div class="card-edit-page" id="card-edit-page">
+            <div class="sub-nav">
+                <div class="back-btn" id="card-edit-back-btn">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </div>
+                <div class="sub-title">编辑资料</div>
+            </div>
+            <div class="sub-content" style="padding: 0; background-color: #f5f5f5;">
+                <div class="edit-item" id="edit-avatar-btn">
+                    <div class="edit-label">头像</div>
+                    <div class="edit-value">
+                        <div class="edit-avatar">薯</div>
+                        <div class="edit-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="edit-item" id="edit-bg-btn">
+                    <div class="edit-label">背景图</div>
+                    <div class="edit-value">
+                        <span>未设置</span>
+                        <div class="edit-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="edit-item" id="edit-name-btn">
+                    <div class="edit-label">昵称</div>
+                    <div class="edit-value">
+                        <span id="edit-name-value">薯片机用户</span>
+                        <div class="edit-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="edit-item" id="edit-signature-btn">
+                    <div class="edit-label">个性签名</div>
+                    <div class="edit-value">
+                        <span id="edit-signature-value">这个人很懒，什么都没写~</span>
+                        <div class="edit-arrow">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * 【应用状态管理】
+         */
+        const AppState = {
+            currentTab: 'msg-page',
+            currentChat: null,
+            sideMenuOpen: false,
+            addPopupOpen: false,
+            
+            userData: {
+                name: '薯片机用户',
+                avatar: '薯',
+                signature: '这个人很懒，什么都没写~'
+            },
+            
+            chatList: [],
+            friendList: [],
+            
+            apiConfig: {
+                apiKey: '',
+                apiUrl: '',
+                model: 'gpt-3.5-turbo',
+                temperature: 0.7,
+                maxTokens: 2000
+            }
+        };
+
+        /**
+         * 【DOM 元素引用】
+         */
+        const DOM = {
+            appContainer: document.getElementById('app-container'),
+            topNav: document.getElementById('top-nav'),
+            userInfo: document.getElementById('user-info'),
+            addBtn: document.getElementById('add-btn'),
+            addPopup: document.getElementById('add-popup'),
+            sideMenu: document.getElementById('side-menu'),
+            mask: document.getElementById('mask'),
+            cardEditBtn: document.getElementById('card-edit-btn'),
+            msgPage: document.getElementById('msg-page'),
+            friendPage: document.getElementById('friend-page'),
+            dynamicPage: document.getElementById('dynamic-page'),
+            tabBar: document.getElementById('tab-bar'),
+            chatPage: document.getElementById('chat-page'),
+            chatTitle: document.getElementById('chat-title'),
+            chatMessages: document.getElementById('chat-messages'),
+            chatInput: document.getElementById('chat-input'),
+            chatSendBtn: document.getElementById('chat-send-btn'),
+            chatBackBtn: document.getElementById('chat-back-btn'),
+            cardEditPage: document.getElementById('card-edit-page'),
+            cardEditBackBtn: document.getElementById('card-edit-back-btn'),
+            msgList: document.getElementById('msg-list')
+        };
+
+        /**
+         * 【底部标签栏切换】
+         */
+        function initTabBar() {
+            const tabItems = DOM.tabBar.querySelectorAll('.tab-item');
+            const mainContents = document.querySelectorAll('.main-content');
+            
+            tabItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const targetTab = item.dataset.tab;
+                    
+                    tabItems.forEach(tab => tab.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    mainContents.forEach(content => content.classList.remove('active'));
+                    document.getElementById(targetTab).classList.add('active');
+                    
+                    AppState.currentTab = targetTab;
+                });
+            });
+        }
+
+        /**
+         * 【侧边栏控制】- 优化性能
+         */
+        function initSideMenu() {
+            // 使用 requestAnimationFrame 优化动画
+            DOM.userInfo.addEventListener('click', () => {
+                requestAnimationFrame(() => {
+                    openSideMenu();
+                });
+            });
+            
+            DOM.mask.addEventListener('click', () => {
+                requestAnimationFrame(() => {
+                    closeSideMenu();
+                });
+            });
+            
+            const menuItems = DOM.sideMenu.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const func = item.dataset.func;
+                    handleMenuClick(func);
+                });
+            });
+            
+            DOM.cardEditBtn.addEventListener('click', () => {
+                closeSideMenu();
+                setTimeout(() => {
+                    openCardEditPage();
+                }, 100);
+            });
+        }
+        
+        function openSideMenu() {
+            DOM.sideMenu.classList.add('open');
+            DOM.mask.classList.add('show');
+            AppState.sideMenuOpen = true;
+        }
+        
+        function closeSideMenu() {
+            DOM.sideMenu.classList.remove('open');
+            DOM.mask.classList.remove('show');
+            AppState.sideMenuOpen = false;
+        }
+        
+        function handleMenuClick(func) {
+            closeSideMenu();
+            
+            setTimeout(() => {
+                switch(func) {
+                    case 'wallet':
+                        alert('钱包功能开发中...');
+                        break;
+                    case 'collection':
+                        alert('收藏功能开发中...');
+                        break;
+                    case 'emoji':
+                        alert('表情包功能开发中...');
+                        break;
+                    case 'worldbook':
+                        openSubPage('worldbook-page');
+                        break;
+                    case 'decoration':
+                        alert('个性装扮功能开发中...');
+                        break;
+                    case 'api-settings':
+                        openSubPage('api-settings-page');
+                        break;
+                    case 'chat-summary':
+                        openSubPage('chat-summary-page');
+                        break;
+                    case 'settings':
+                        alert('设置功能开发中...');
+                        break;
+                }
+            }, 150);
+        }
+
+        /**
+         * 【添加弹窗控制】
+         */
+        function initAddPopup() {
+            DOM.addBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleAddPopup();
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (AppState.addPopupOpen && !DOM.addPopup.contains(e.target)) {
+                    closeAddPopup();
+                }
+            });
+            
+            document.getElementById('add-friend-btn').addEventListener('click', () => {
+                closeAddPopup();
+                alert('添加AI好友功能开发中...\n\n计划功能：\n1. 从角色卡库选择\n2. 导入自定义角色卡\n3. 创建新角色');
+            });
+            
+            document.getElementById('create-group-btn').addEventListener('click', () => {
+                closeAddPopup();
+                alert('创建AI群聊功能开发中...\n\n计划功能：\n1. 选择多个AI角色\n2. 设置群聊名称\n3. 配置群聊规则');
+            });
+            
+            document.getElementById('scan-btn').addEventListener('click', () => {
+                closeAddPopup();
+                alert('扫一扫功能开发中...\n\n计划功能：\n1. 扫描角色卡二维码\n2. 扫描分享链接');
+            });
+        }
+        
+        function toggleAddPopup() {
+            if (AppState.addPopupOpen) {
+                closeAddPopup();
+            } else {
+                openAddPopup();
+            }
+        }
+        
+        function openAddPopup() {
+            DOM.addPopup.classList.add('show');
+            AppState.addPopupOpen = true;
+        }
+        
+        function closeAddPopup() {
+            DOM.addPopup.classList.remove('show');
+            AppState.addPopupOpen = false;
+        }
+
+        /**
+         * 【好友分组展开/收起】
+         */
+        function initFriendGroups() {
+            const groupHeaders = document.querySelectorAll('.group-header');
+            
+            groupHeaders.forEach(header => {
+                header.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('group-edit')) {
+                        alert('分组管理功能开发中...');
+                        return;
+                    }
+                    
+                    const groupName = header.dataset.group;
+                    const friendList = document.querySelector(`.friend-list[data-group="${groupName}"]`);
+                    
+                    header.classList.toggle('collapsed');
+                    friendList.classList.toggle('show');
+                });
+            });
+            
+            const friendItems = document.querySelectorAll('.friend-item');
+            friendItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const friendId = item.dataset.friendId;
+                    const friendName = item.querySelector('.friend-name').textContent;
+                    openChat(friendId, friendName);
+                });
+            });
+        }
+
+        /**
+         * 【动态页功能入口】
+         */
+        function initDynamicPage() {
+            const funcItems = document.querySelectorAll('.func-item');
+            
+            funcItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const pageId = item.dataset.page;
+                    openSubPage(pageId);
+                });
+            });
+            
+            const backBtns = document.querySelectorAll('.sub-page .back-btn');
+            backBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const pageId = btn.dataset.back;
+                    closeSubPage(pageId);
+                });
+            });
+        }
+        
+        function openSubPage(pageId) {
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('open');
+            }
+        }
+        
+        function closeSubPage(pageId) {
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.remove('open');
+            }
+        }
+
+        /**
+         * 【消息列表点击】
+         */
+        function initMsgList() {
+            const msgItems = DOM.msgList.querySelectorAll('.msg-item');
+            
+            msgItems.forEach(item => {
+                                item.addEventListener('click', () => {
+                    const chatId = item.dataset.chatId;
+                    const chatName = item.querySelector('.msg-title').textContent;
+                    openChat(chatId, chatName);
+                });
+            });
+        }
+
+        /**
+         * 【聊天页面控制】
+         */
+        function initChatPage() {
+            DOM.chatBackBtn.addEventListener('click', () => {
+                closeChatPage();
+            });
+            
+            DOM.chatSendBtn.addEventListener('click', () => {
+                sendMessage();
+            });
+            
+            DOM.chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 自动调整输入框高度
+            DOM.chatInput.addEventListener('input', () => {
+                DOM.chatInput.style.height = 'auto';
+                DOM.chatInput.style.height = Math.min(DOM.chatInput.scrollHeight, 100) + 'px';
+            });
+        }
+        
+        function openChat(chatId, chatName) {
+            AppState.currentChat = { id: chatId, name: chatName };
+            DOM.chatTitle.textContent = chatName || 'AI助手';
+            DOM.chatPage.classList.add('open');
+            
+            // 清空之前的消息
+            DOM.chatMessages.innerHTML = '';
+            
+            // 添加欢迎消息
+            addChatBubble('received', `你好！我是${chatName || 'AI助手'}，很高兴认识你！有什么我可以帮助你的吗？`);
+        }
+        
+        function closeChatPage() {
+            DOM.chatPage.classList.remove('open');
+            AppState.currentChat = null;
+        }
+        
+        function sendMessage() {
+            const message = DOM.chatInput.value.trim();
+            if (!message) return;
+            
+            // 添加用户消息
+            addChatBubble('sent', message);
+            
+            // 清空输入框
+            DOM.chatInput.value = '';
+            DOM.chatInput.style.height = 'auto';
+            
+            // 模拟AI回复
+            setTimeout(() => {
+                const replies = [
+                    '这是一个很有趣的问题！让我想想...',
+                    '我明白你的意思了，我来帮你分析一下。',
+                    '好的，我会尽力帮助你的！',
+                    '这个话题很有意思，我们可以深入讨论一下。',
+                    '感谢你的分享，我很喜欢和你聊天！'
+                ];
+                const randomReply = replies[Math.floor(Math.random() * replies.length)];
+                addChatBubble('received', randomReply);
+            }, 1000);
+        }
+        
+        function addChatBubble(type, message) {
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${type}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'chat-avatar';
+            avatar.textContent = type === 'sent' ? AppState.userData.avatar : (AppState.currentChat?.name?.[0] || 'AI');
+            
+            const text = document.createElement('div');
+            text.className = 'chat-text';
+            text.textContent = message;
+            
+            bubble.appendChild(avatar);
+            bubble.appendChild(text);
+            
+            DOM.chatMessages.appendChild(bubble);
+            
+            // 滚动到底部
+            DOM.chatMessages.scrollTop = DOM.chatMessages.scrollHeight;
+        }
+
+        /**
+         * 【个性名片编辑页面】
+         */
+        function initCardEditPage() {
+            DOM.cardEditBackBtn.addEventListener('click', () => {
+                closeCardEditPage();
+            });
+            
+            document.getElementById('edit-avatar-btn').addEventListener('click', () => {
+                alert('头像修改功能开发中...\n\n计划功能：\n1. 从相册选择\n2. 拍照\n3. 使用AI生成头像');
+            });
+            
+            document.getElementById('edit-bg-btn').addEventListener('click', () => {
+                alert('背景图修改功能开发中...');
+            });
+            
+            document.getElementById('edit-name-btn').addEventListener('click', () => {
+                const newName = prompt('请输入新昵称：', AppState.userData.name);
+                if (newName && newName.trim()) {
+                    AppState.userData.name = newName.trim();
+                    updateUserDisplay();
+                }
+            });
+            
+            document.getElementById('edit-signature-btn').addEventListener('click', () => {
+                const newSignature = prompt('请输入个性签名：', AppState.userData.signature);
+                if (newSignature !== null) {
+                    AppState.userData.signature = newSignature.trim() || '这个人很懒，什么都没写~';
+                    updateUserDisplay();
+                }
+            });
+        }
+        
+        function openCardEditPage() {
+            DOM.cardEditPage.classList.add('open');
+        }
+        
+        function closeCardEditPage() {
+            DOM.cardEditPage.classList.remove('open');
+        }
+        
+        function updateUserDisplay() {
+            // 更新顶部导航栏
+            document.querySelector('.user-name').textContent = AppState.userData.name;
+            document.querySelector('.user-avatar').textContent = AppState.userData.name[0];
+            
+            // 更新侧边栏
+            document.querySelector('.card-name').textContent = AppState.userData.name;
+            document.querySelector('.card-avatar').textContent = AppState.userData.name[0];
+            document.querySelector('.card-signature').textContent = AppState.userData.signature;
+            
+            // 更新编辑页面
+            document.getElementById('edit-name-value').textContent = AppState.userData.name;
+            document.getElementById('edit-signature-value').textContent = AppState.userData.signature;
+            document.querySelector('.edit-avatar').textContent = AppState.userData.name[0];
+        }
+
+        /**
+         * 【搜索功能】
+         */
+        function initSearch() {
+            const searchInputMsg = document.getElementById('search-input-msg');
+            const searchInputFriend = document.getElementById('search-input-friend');
+            const searchInputDynamic = document.getElementById('search-input-dynamic');
+            
+            if (searchInputMsg) {
+                searchInputMsg.addEventListener('input', (e) => {
+                    const keyword = e.target.value.trim().toLowerCase();
+                    filterMsgList(keyword);
+                });
+            }
+            
+            if (searchInputFriend) {
+                searchInputFriend.addEventListener('input', (e) => {
+                    const keyword = e.target.value.trim().toLowerCase();
+                    filterFriendList(keyword);
+                });
+            }
+            
+            if (searchInputDynamic) {
+                searchInputDynamic.addEventListener('input', (e) => {
+                    const keyword = e.target.value.trim().toLowerCase();
+                    filterFuncList(keyword);
+                });
+            }
+        }
+        
+        function filterMsgList(keyword) {
+            const msgItems = DOM.msgList.querySelectorAll('.msg-item');
+            msgItems.forEach(item => {
+                const title = item.querySelector('.msg-title')?.textContent.toLowerCase() || '';
+                const desc = item.querySelector('.msg-desc')?.textContent.toLowerCase() || '';
+                if (title.includes(keyword) || desc.includes(keyword)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = keyword ? 'none' : 'flex';
+                }
+            });
+        }
+        
+        function filterFriendList(keyword) {
+            const friendItems = document.querySelectorAll('.friend-item');
+            friendItems.forEach(item => {
+                const name = item.querySelector('.friend-name')?.textContent.toLowerCase() || '';
+                if (name.includes(keyword)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = keyword ? 'none' : 'flex';
+                }
+            });
+        }
+        
+        function filterFuncList(keyword) {
+            const funcItems = document.querySelectorAll('.func-item');
+            funcItems.forEach(item => {
+                const name = item.querySelector('.func-name')?.textContent.toLowerCase() || '';
+                const desc = item.querySelector('.func-desc')?.textContent.toLowerCase() || '';
+                if (name.includes(keyword) || desc.includes(keyword)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = keyword ? 'none' : 'flex';
+                }
+            });
+        }
+
+        /**
+         * 【触摸优化】- 防止iOS橡皮筋效果
+         */
+        function initTouchOptimization() {
+            document.body.addEventListener('touchmove', (e) => {
+                // 允许可滚动区域滚动
+                const scrollableElements = [
+                    '.main-content',
+                    '.menu-list',
+                    '.chat-messages',
+                    '.sub-content'
+                ];
+                
+                let isScrollable = false;
+                for (const selector of scrollableElements) {
+                    if (e.target.closest(selector)) {
+                        isScrollable = true;
+                        break;
+                    }
+                }
+                
+                if (!isScrollable) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        /**
+         * 【应用初始化】
+         */
+        function initApp() {
+            initTabBar();
+            initSideMenu();
+            initAddPopup();
+            initFriendGroups();
+            initDynamicPage();
+            initMsgList();
+            initChatPage();
+            initCardEditPage();
+            initSearch();
+            initTouchOptimization();
+            
+            console.log('薯片机 App 初始化完成！');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
